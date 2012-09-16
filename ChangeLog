@@ -1,0 +1,58 @@
+Parches Metidos:
+
+- Implementada la Armeria.
+- Añadidas traducciones para: loc6_esES y loc7_esMX.
+- Correcciones en las traducciones: loc6_esES y loc7_esMX.
+- Fix para corregir los nombres de algunos items en las traducciones: loc6_esES y loc7_esMX.
+- Correciones en las traducciones v2: loc6_esES. Gracias MrBytes.
+- Añadida la carpeta sql_wowmercury para mis parches.
+- Añadias mas traducciones por codigo (Gossip).
+- Fix para spell_hacks para ser aplicable con SQLyog.
+- Añadido un AutoBan por Dupeo de item´s (no mercy hackers).
+- Añadido el fichero revision_WOWMERCURY.h
+- Pequeño fix para arreglar un error en el fichero: mangos_opvp_capture_points.sql
+- Puesto un parche para deslimitar el WHO para que no muestre 50 personas que muestra toda la gente conectada.
+- Añadida un poco de informacion al mangosd.conf.dist.in
+- Reorganizacion:
+
+  - Movidos los cambios en el core a ChangeLog.
+  - Agregada documentacion a README-WOWMERCURY.
+- Arreglado algunos link en el README.
+- Corregidos algunos copyright y añadidos nuestros copyright en los archivos que hemos tocado nosotros.
+- Correciones en los copyright V2.
+- Corregida una palabra del ChangeLog.
+- Añadidos algunos cambios a la tabla mangos_string.
+- Actualizado el core.
+- Arreglado un error en el README-WOWMERCURY.
+- Adaptado el fichero revision_WOWMERCURY.h
+- Actualizado el core.
+- Actualizado el core.
+- Eliminados los proyecto de win a partir de ahora los proyectos se generan con el cmake.
+- Nuevas entradas del STAFF.
+- Añadidos los proyectos win arreglados.
+- Actualizado el core.
+- Actualizado el core y hechos algunos arreglos.
+- Actualizado el core parte 2/2.
+- Corregidos los proyectos de win y elimindados los proyectos VC90.
+- Actualizado el core.
+- Corregido un fallo del anterior commit.
+- Actualizado el core.
+- Actualizado el core y hechos algunos arreglos.
+- Actualizado el core parte 2/2.
+- Corregido un fallo.
+- Añadido el fichero: project_setup_lluve
+- Actualizado el core.
+- Actualizado el core.
+- Actualizado el core.
+- Cambiado el CMakeLists.
+- Intento de arreglo al translacion.
+- Correciones en el parche de la translacion.
+- Actualizado el core y hechos algunos arreglos.
+- Correciones en el parche de la translacion.
+- Correciones V2 en el parche de translacion.
+- Corregido un fail.
+- Revertido el parche de traslacion y añadidas unas correciones.
+- Correciones V2.
+- Correciones V3.
+- Actualizado el core y hechos algunos arreglos.
+- Movidas las cosas del bitbucket al GIT. Motivo: Es mas sencillo hacerlas las actualizaciones del core.

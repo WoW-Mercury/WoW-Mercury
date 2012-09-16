@@ -893,6 +893,11 @@ LexicsCutterNoActionOnGM = 1
 #        Default: 0 - flags not unique
 #                 1 - flags unique, not more then 1 player may have this flag
 #
+#    WOWArmorySupport
+#        Support collect statistics for Shadez WOW Armory frontend
+#        Default: 0 - don't support
+#                 1 - supported
+#
 #    ClientCacheVersion
 #        Client cache version for client cache data reset. Use any different from DB value and not recently used for triggering reset.
 #        Default: 0 (use DB value from world DB db_version.cache_id field)
@@ -1020,6 +1025,7 @@ PetSaveAllInDB = 0
 PetAdvancedAI = 0
 RaidFlags.Unique = 0
 AllowFlightOnOldMaps = 0
+WOWArmorySupport = 0
 ClientCacheVersion = 0
 Event.Announce = 0
 BeepAtStart = 1
@@ -1376,6 +1382,10 @@ Channel.SilentlyGMJoin = 0
 #        A spell that will be cast when a gm uses ".gm visible off" (Must be aura spell)
 #        Default: 37800 (50% Transparency)
 #                 0 (Disabled)
+#                 37804 (0% Transparency)
+#                 37801 (25% Transparency)
+#                 37802 (75% Transparency)
+#                 37803 (100% Transparency)
 #
 ###################################################################################################################
 

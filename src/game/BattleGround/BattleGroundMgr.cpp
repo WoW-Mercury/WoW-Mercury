@@ -47,7 +47,10 @@
 
 #include "Policies/SingletonImp.h"
 
+#include <fstream>
+
 INSTANTIATE_SINGLETON_1(BattleGroundMgr);
+
 
 /*********************************************************/
 /***            BATTLEGROUND QUEUE SYSTEM              ***/
@@ -1195,15 +1198,37 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket* data, BattleGround* bg)
 
     if (type)                                               // arena
     {
+        /****** arena battle log ************/
+        if(bg->isRated())
+        {
+            ArenaTeam * at1 = sObjectMgr.GetArenaTeamById(bg->m_ArenaTeamIds[0]);
+            ArenaTeam * at2 = sObjectMgr.GetArenaTeamById(bg->m_ArenaTeamIds[1]);
+            if ((at1 && at2) && (at1->GetBattleRating() > 1800 || at2->GetBattleRating() > 1800))
+            {
+                ofstream arenalog;
+                arenalog.open("arenalog.log", ios::app);
+                arenalog << "Arena: Team: " << at1->GetName() << " vs " << at2->GetName() << "\n";
+                arenalog.close();
+            }
+        }
+        /************************************/
+
         // it seems this must be according to BG_WINNER_A/H and _NOT_ TEAM_INDEX_A/H
         for (int8 i = 1; i >= 0; --i)
         {
+            uint32 at_id = bg->m_ArenaTeamIds[i];
+            ArenaTeam * at = sObjectMgr.GetArenaTeamById(at_id);
+
             uint32 pointsLost = bg->m_ArenaTeamRatingChanges[i] < 0 ? abs(bg->m_ArenaTeamRatingChanges[i]) : 0;
             uint32 pointsGained = bg->m_ArenaTeamRatingChanges[i] > 0 ? bg->m_ArenaTeamRatingChanges[i] : 0;
 
-            *data << uint32(pointsLost);                    // Rating Lost
-            *data << uint32(pointsGained);                  // Rating gained
-            *data << uint32(0);                             // Matchmaking Value
+            *data << uint32(pointsLost);                        // Rating Lost
+            *data << uint32(pointsGained);                      // Rating gained
+            if(at)
+                *data << uint32(at->GetBattleRating());         // Matchmaking Value
+            else
+                *data << uint32(0);                             // Matchmaking Value
+
             DEBUG_LOG("rating change: %d", bg->m_ArenaTeamRatingChanges[i]);
         }
 
@@ -1418,8 +1443,9 @@ BattleGround* BattleGroundMgr::CreateNewBattleGround(BattleGroundTypeId bgTypeId
     // for arenas there is random map used
     if (bg_template->isArena())
     {
-        BattleGroundTypeId arenas[] = { BATTLEGROUND_NA, BATTLEGROUND_BE, BATTLEGROUND_RL, BATTLEGROUND_DS, BATTLEGROUND_RV };
-        bgTypeId = arenas[urand(0, countof(arenas) - 1)];
+        BattleGroundTypeId arenas[] = {BATTLEGROUND_NA, BATTLEGROUND_BE, BATTLEGROUND_RL, BATTLEGROUND_DS, BATTLEGROUND_RV};
+        bgTypeId = arenas[urand(0, countof(arenas)-1)];
+
         bg_template = GetBattleGroundTemplate(bgTypeId);
         if (!bg_template)
         {

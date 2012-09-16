@@ -512,7 +512,7 @@ void WorldSession::HandleBattleFieldPortOpcode(WorldPacket& recv_data)
             break;
         case 0:                                         // leave queue
             // if player leaves rated arena match before match start, it is counted as he played but he lost
-            /*if (ginfo.IsRated && ginfo.IsInvitedToBGInstanceGUID)
+            if (ginfo.IsRated && ginfo.IsInvitedToBGInstanceGUID)
             {
                 ArenaTeam* at = sObjectMgr.GetArenaTeamById(ginfo.ArenaTeamId);
                 if (at)
@@ -521,7 +521,7 @@ void WorldSession::HandleBattleFieldPortOpcode(WorldPacket& recv_data)
                     at->MemberLost(_player, ginfo.OpponentsTeamRating);
                     at->SaveToDB();
                 }
-            }*/
+            }
             _player->RemoveBattleGroundQueueId(bgQueueTypeId);  // must be called this way, because if you move this call to queue->removeplayer, it causes bugs
             sBattleGroundMgr.BuildBattleGroundStatusPacket(&data, bg, queueSlot, STATUS_NONE, 0, 0, ARENA_TYPE_NONE);
             bgQueue.RemovePlayer(_player->GetObjectGuid(), true);
@@ -554,6 +554,20 @@ void WorldSession::HandleLeaveBattlefieldOpcode(WorldPacket& recv_data)
         if (BattleGround* bg = _player->GetBattleGround())
             if (bg->GetStatus() != STATUS_WAIT_LEAVE)
                 return;
+
+    // check if arena is in progress when player leave and make player lose rating if is in progres
+    if(BattleGround* bg = _player->GetBattleGround())
+    {
+        if(bg->isArena() && bg->isRated() && bg->GetStatus() != STATUS_WAIT_LEAVE)
+        {
+            ArenaTeam *team = sObjectMgr.GetArenaTeamById(bg->GetArenaTeamIdForTeam(bg->GetOtherTeam(_player->GetTeam())));
+            if(team)
+            {
+                uint32 other_team_rating = team->GetBattleRating();
+                team->MemberLost(_player, other_team_rating);
+            }
+        }
+    }
 
     _player->LeaveBattleground();
 }
@@ -756,6 +770,8 @@ void WorldSession::HandleBattlemasterJoinArena(WorldPacket& recv_data)
 
     if (isRated)
     {
+        //return;  //temporal arena disables
+
         ateamId = _player->GetArenaTeamId(arenaslot);
         // check real arena team existence only here (if it was moved to group->CanJoin .. () then we would have to get it twice)
         ArenaTeam* at = sObjectMgr.GetArenaTeamById(ateamId);

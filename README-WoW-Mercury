@@ -1,0 +1,20 @@
+WoW-Mercury README
+
+WoW-Mercury es un fuente de codigo abierto MMORPG Framework basado en C++
+apoyado por toda la comunidad. Esto es un derivado de MaNGOS, the Massive
+Network Game Object Server. Ahora mismo nuestro cliente esta soportando la
+version 3.3.5a (12340)
+
+WoW-Mercury es un software gratuito. Usted puede redistribuirlo y / o modificar
+bajo los términos de la Licencia Pública General de GNU según lo publicado por
+la Free Software Foundation, ya sea la versión 2 de la Licencia, o
+(a su elección) cualquier versión posterior.
+
+WoW-Mercury no es un projecto separado. Es una copia de "MaNGOS project" y
+"ScriptDev2 project" pretendiendo poner a prueba el nuevo código, que por alguna
+razon no se acepto (o no será aceptado) en sus proyectos.
+WoW-Mercury intenta tomar lo mejor de MaNGOS, TrinityCore y otros proyectos, mientras que
+tratamos de preservar la coherencia y la simplicidad del código de MaNGOS.
+
+                                                                 
+Copyright (C) 2012-2013 WoW-Mercury       <https://bitbucket.org/wowmercury>

@@ -354,7 +354,7 @@ pAuraHandler AuraHandler[TOTAL_AURAS]=
     &Aura::HandleNULL,                                      //297 1 spell (counter spell school?)
     &Aura::HandleUnused,                                    //298 unused (3.2.2a)
     &Aura::HandleUnused,                                    //299 unused (3.2.2a)
-    &Aura::HandleNoImmediateEffect,                         //300 3 spells, share damage (in percent) with aura owner and aura target. implemented in Unit::DealDamage
+    &Aura::HandleAuraShareDamage,                           //300 3 spells, share damage (in percent) with aura owner and aura target. implemented in Unit::DealDamage
     &Aura::HandleNULL,                                      //301 SPELL_AURA_HEAL_ABSORB 5 spells
     &Aura::HandleUnused,                                    //302 unused (3.2.2a)
     &Aura::HandleNoImmediateEffect,                         //303 SPELL_AURA_DAMAGE_DONE_VERSUS_AURA_STATE_PCT 17 spells implemented in Unit::*DamageBonus
@@ -442,6 +442,25 @@ m_isPersistent(false), m_spellAuraHolder(holder), m_classType(type)
     // Start periodic on next tick or at aura apply
     if (!spellproto->HasAttribute(SPELL_ATTR_EX5_START_PERIODIC_AT_APPLY))
         m_periodicTimer = m_modifier.periodictime;
+
+// some spells that should also tick at apply
+  switch (spellproto->Id)
+  {
+        case 5728: // Stoneclaw Totem
+        case 6397:
+        case 6398:
+        case 6399:
+        case 10425:
+        case 10426:
+        case 25513:
+        case 58583:
+        case 58584:
+        case 58585:
+        case 63298:
+        case 6474: // Earthbind Totem
+        case 8145: // Tremor Totem
+            m_periodicTimer = 0;
+  }
 
     // Calculate CrowdControl damage start value
     if (IsCrowdControlAura(m_modifier.m_auraname))
@@ -777,9 +796,42 @@ void Aura::AreaAuraUpdate(uint32 diff)
                 }
                 case AREA_AURA_FRIEND:
                 {
-                    MaNGOS::AnyFriendlyUnitInObjectRangeCheck u_check(caster, m_radius);
-                    MaNGOS::UnitListSearcher<MaNGOS::AnyFriendlyUnitInObjectRangeCheck> searcher(_targets, u_check);
-                    Cell::VisitAllObjects(caster, searcher, m_radius);
+                    switch (GetSpellProto()->Id)
+                    {
+                        case 45822:    //BG AV Buffs - Horde
+                        case 45823:
+                        case 45824:
+                        case 45826:
+                        {
+                            Creature* pCreature = NULL;
+                            MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck creature_check(*caster, 11946, true, false, m_radius);
+                            MaNGOS::CreatureLastSearcher<MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck> searcher(pCreature, creature_check);
+                            Cell::VisitGridObjects(caster, searcher, m_radius);
+                            if (pCreature)
+                                targets.insert(pCreature->GetObjectGuid());
+                            break;
+                        }
+                        case 45828:    //BG AV Buffs - Alliance
+                        case 45829:
+                        case 45830:
+                        case 45831:
+                        {
+                            Creature* pCreature = NULL;
+                            MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck creature_check(*caster, 11948, true, false, m_radius);
+                            MaNGOS::CreatureLastSearcher<MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck> searcher(pCreature, creature_check);
+                            Cell::VisitGridObjects(caster, searcher, m_radius);
+                            if (pCreature)
+                                targets.insert(pCreature->GetObjectGuid());
+                            break;
+                        }
+                        default:
+                        {
+                            MaNGOS::AnyFriendlyUnitInObjectRangeCheck u_check(caster, m_radius);
+                            MaNGOS::UnitListSearcher<MaNGOS::AnyFriendlyUnitInObjectRangeCheck> searcher(_targets, u_check);
+                            Cell::VisitAllObjects(caster, searcher, m_radius);
+                            break;
+                        }
+                    }
                     break;
                 }
                 case AREA_AURA_ENEMY:
@@ -1207,6 +1259,9 @@ bool Aura::IsEffectStacking()
         case SPELL_AURA_MOD_STAT:                                                              // various stat buffs
             return (spellProto->SpellFamilyName == SPELLFAMILY_GENERIC);
         case SPELL_AURA_MOD_CASTING_SPEED_NOT_STACK:                                           // Wrath of Air Totem / Mind-Numbing Poison and many more
+            if (spellProto->IsFitToFamily<SPELLFAMILY_SHAMAN, CF_SHAMAN_BLOODLUST_HEROISM>() ||  // Bloodlust/Heroism
+                spellProto->IsFitToFamily<SPELLFAMILY_PRIEST, CF_PRIEST_POWER_INFUSION>())       // Power Infusion
+                return false;
             return (spellProto->CalculateSimpleValue(m_effIndex) > 0);
         case SPELL_AURA_MOD_DAMAGE_PERCENT_DONE:                                               // Ferocious Inspiration / Sanctified Retribution
         case SPELL_AURA_MOD_ATTACKER_SPELL_AND_WEAPON_CRIT_CHANCE:                             // Heart of the Crusader / Totem of Wrath
@@ -1282,6 +1337,8 @@ void Aura::HandleAddModifier(bool apply, bool Real)
     {
         SpellEntry const* spellProto = GetSpellProto();
 
+        uint64 modMask0 = 0;
+        uint64 modMask1 = 0;
         // Add custom charges for some mod aura
         switch (spellProto->Id)
         {
@@ -1972,8 +2029,14 @@ void Aura::TriggerSpell()
                     case 70017:                             // Gunship Cannon Fire
                         trigger_spell_id = 70021;
                         break;
-//                    // Ice Tomb
-//                    case 70157: break;
+                    // Ice Tomb
+                    case 70157:
+                        GetModifier()->m_amount += 1;
+
+                        if (GetModifier()->m_amount == 25)
+                            triggerTarget->CastSpell(triggerTarget, 71665, true);
+
+                        break;
                     case 70842:                             // Mana Barrier
                     {
                         if (!triggerTarget || triggerTarget->getPowerType() != POWER_MANA)
@@ -1999,8 +2062,22 @@ void Aura::TriggerSpell()
 //                    case 71110: break;
 //                    // Aura of Darkness
 //                    case 71111: break;
-//                    // Ball of Flames Visual
-//                    case 71706: break;
+                    // Ball of Flames Visual
+                    case 71706:
+                    {
+                        // don't "proc" on heroic
+                        if (triggerTarget->GetMap()->GetDifficulty() <= RAID_DIFFICULTY_25MAN_NORMAL)
+                        {
+                            if (SpellAuraHolderPtr holder = triggerTarget->GetSpellAuraHolder(71756))
+                            {
+                                if (holder->GetStackAmount() <= 1)
+                                    triggerTarget->RemoveSpellAuraHolder(holder);
+                                else
+                                    holder->ModStackAmount(-1);
+                            }
+                        }
+                        break;
+                    }
 //                    // Summon Broken Frostmourne
 //                    case 74081: break;
                     default:
@@ -5154,6 +5231,7 @@ void Aura::HandleAuraModDisarm(bool apply, bool Real)
 
     if (apply)
     {
+        target->RemoveAurasDueToSpell(46924); // Disarm should stop bladestorm
         target->SetAttackTime(BASE_ATTACK,BASE_ATTACK_TIME);
     }
     else
@@ -6111,6 +6189,12 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
                 }
 
                 return;
+            case 71280:                                     // Choking Gas Explode Trigger
+                {
+                    if (Unit *pCaster = GetCaster())
+                        pCaster->CastSpell(pCaster, 71279, true);
+                }
+                return;
             case 70405:                                     // Mutated Transformation (Putricide)
             case 72508:
             case 72509:
@@ -6125,7 +6209,6 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
                 break;
         }
     }
-
     switch (GetId())
     {
         case 70157:                                     // Ice Tomb (Sindragosa)
@@ -6384,6 +6467,12 @@ void Aura::HandleAuraPeriodicDummy(bool apply, bool Real)
                         target->CastSpell(target, 64219, true);
                         target->DealDamage(target, target->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
                     }
+                    return;
+                }
+                case 73001:                                   // Shadow Prison
+                {
+                    if (target)
+                        target->CastSpell(target, 72998, true);
                     return;
                 }
             }
@@ -10408,7 +10497,6 @@ void Aura::HandleAuraSafeFall( bool Apply, bool Real )
 bool Aura::IsCritFromAbilityAura(Unit* caster, DamageInfo* damageInfo)
 {
     if (!GetSpellProto()->IsFitToFamily<SPELLFAMILY_ROGUE, CF_ROGUE_RUPTURE>() && // Rupture
-        !GetSpellProto()->IsFitToFamily<SPELLFAMILY_ROGUE, CF_ROGUE_DEADLY_POISON>() &&
         !caster->HasAffectedAura(SPELL_AURA_ABILITY_PERIODIC_CRIT, GetSpellProto()))
         return false;
 
@@ -11315,6 +11403,21 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
                     spellId1 = 65269;
                     break;
                 }
+                case 66683:                                 // Massive Crash
+                {
+                    Unit *caster = GetCaster();
+
+                    if (caster->GetMap()->GetDifficulty() == RAID_DIFFICULTY_10MAN_NORMAL ||
+                        caster->GetMap()->GetDifficulty() == RAID_DIFFICULTY_25MAN_NORMAL)
+                    {
+                        if (!apply && m_removeMode == AURA_REMOVE_BY_EXPIRE)
+                        {
+                            cast_at_remove = true;
+                            spellId1 = 68667;
+                        }
+                    }
+                    break;
+                }
                 case 69409:                                 // Soul Reaper (Lich King)
                 case 73797:
                 case 73798:
@@ -11336,6 +11439,11 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
                 case 71532:
                 case 71533:
                 {
+                    if (apply)
+                    {
+                        if (Unit* caster = GetCaster())
+                            caster->RemoveAurasDueToSpell(70877);
+                    }
                     spellId1 = 70871;
                     break;
                 }
@@ -11373,7 +11481,7 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
                     if (!apply)
                     {
                         cast_at_remove = true;
-                        spellId1 = (GetSpellProto() ? GetSpellProto()->CalculateSimpleValue(EFFECT_INDEX_2) : 0);
+                        spellId1 = GetSpellProto() ? GetSpellProto()->CalculateSimpleValue(EFFECT_INDEX_2) : 0;
                     }
                     break;
                 }
@@ -11398,6 +11506,22 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
                         {
                              cast_at_remove = true;
                              spellId1 = 69291;
+                        }
+                    }
+                    break;
+                }
+                case 68980:                                 // Harvest Soul
+                case 74325:
+                case 74296:
+                case 74297:
+                {
+                    if (!apply)
+                    {
+                        if (m_removeMode == AURA_REMOVE_BY_EXPIRE)
+                        {
+                            cast_at_remove = true;
+                            spellId1 = 73655;
+                            spellId2 = 73078;
                         }
                     }
                     break;
@@ -12651,6 +12775,7 @@ uint32 Aura::CalculateCrowdControlBreakDamage()
         return 0;
 
     // Damage cap for CC effects
+
     uint32 damageCap = (int32)((float)GetTarget()->GetMaxHealth() * sWorld.getConfig(CONFIG_FLOAT_CROWDCONTROL_HP_BASE));
 
     if (damageCap < 50)
@@ -12693,4 +12818,39 @@ bool Aura::IsAffectedByCrowdControlEffect(uint32 damage)
 
     m_modifier.m_baseamount -= damage;
     return true;
+}
+
+void Aura::HandleAuraShareDamage(bool apply, bool Real)
+{
+    // Invocation of Blood
+    // not sure if all spells should work like that
+    switch (GetId())
+    {
+        case 70952:
+        case 70981:
+        case 70982:
+        {
+            Unit *pTarget = GetTarget();
+
+            if (!pTarget)
+                return;
+
+            if (apply)
+            {
+                Unit *pCaster = GetCaster();
+
+                if (!pCaster)
+                    return;
+
+                pTarget->SetHealthPercent(pCaster->GetHealthPercent());
+            }
+            else
+            {
+                if (pTarget->isAlive())
+                    pTarget->SetHealth(1);
+            }
+
+            break;
+        }
+    }
 }

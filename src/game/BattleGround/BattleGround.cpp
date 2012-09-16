@@ -614,16 +614,31 @@ void BattleGround::Update(uint32 diff)
     {
         if (m_StartTime > uint32(ARENA_TIME_LIMIT))
         {
-            Team winner;
-            // winner is team with higher damage
-            if (GetDamageDoneForTeam(ALLIANCE) > GetDamageDoneForTeam(HORDE))
-                winner = ALLIANCE;
-            else if (GetDamageDoneForTeam(HORDE) > GetDamageDoneForTeam(ALLIANCE))
-                winner = HORDE;
-            else
-                winner = TEAM_NONE;
-           EndBattleGround(winner);
-           m_ArenaEnded = true;
+            ArenaTeam * green_team = sObjectMgr.GetArenaTeamById(GetArenaTeamIdForTeam(HORDE));
+            ArenaTeam * gold_team = sObjectMgr.GetArenaTeamById(GetArenaTeamIdForTeam(GetOtherTeam(HORDE)));
+
+            uint32 gold_rating = 0;
+            uint32 green_rating = 0;
+
+            if (green_team && gold_team)
+            {
+                gold_rating = gold_team->GetBattleRating();
+                green_rating = green_team->GetBattleRating();
+                //two teams must lost
+                int32 green_change = green_team->LostAgainst(gold_rating);
+                int32 gold_change = gold_team->LostAgainst(green_rating);
+
+                DEBUG_LOG("--- Winner rating: %u, Loser rating: %u, Winner change: %i, Loser change: %i ---", green_rating, gold_rating, green_change, gold_change);
+
+                SetArenaTeamRatingChangeForTeam(HORDE, green_change);
+                SetArenaTeamRatingChangeForTeam(GetOtherTeam(HORDE), gold_change);
+
+                green_team->SaveToDB();
+                gold_team->SaveToDB();
+            }
+
+            EndBattleGround(TEAM_NONE);
+            m_ArenaEnded = true;
         }
     }
 
@@ -873,6 +888,56 @@ void BattleGround::EndBattleGround(Team winner)
             DEBUG_LOG("--- Winner rating: %u, Loser rating: %u, Winner change: %i, Loser change: %i ---", winner_rating, loser_rating, winner_change, loser_change);
             SetArenaTeamRatingChangeForTeam(winner, winner_change);
             SetArenaTeamRatingChangeForTeam(GetOtherTeam(winner), loser_change);
+            /** World of Warcraft Armory **/
+            if (sWorld.getConfig(CONFIG_BOOL_ARMORY_SUPPORT))
+            {
+                uint32 maxChartID;
+                QueryResult *result = CharacterDatabase.PQuery("SELECT MAX(gameid) FROM armory_game_chart");
+                if(!result)
+                    maxChartID = 0;
+                else
+                {
+                    maxChartID = (*result)[0].GetUInt32();
+                    delete result;
+                }
+                uint32 gameID = maxChartID+1;
+                for(BattleGroundScoreMap::const_iterator itr = m_PlayerScores.begin(); itr != m_PlayerScores.end(); ++itr)
+                {
+                    Player *plr = sObjectMgr.GetPlayer(itr->first);
+
+                    if (!plr)
+                        continue;
+
+                    uint32 plTeamID = plr->GetArenaTeamId(winner_arena_team->GetSlot());
+
+                    int changeType;
+                    uint32 resultRating;
+                    uint32 resultTeamID;
+                    int32 ratingChange;
+                    if (plTeamID == winner_arena_team->GetId())
+                    {
+                        changeType = 1; //win
+                        resultRating = winner_rating;
+                        resultTeamID = plTeamID;
+                        ratingChange = winner_change;
+                    }
+                    else
+                    {
+                        changeType = 2; //lose
+                        resultRating = loser_rating;
+                        resultTeamID = loser_arena_team->GetId();
+                        ratingChange = loser_change;
+                    }
+                    std::ostringstream sql_query;
+
+                    sql_query << "INSERT INTO armory_game_chart (gameid, teamid, guid, changeType, ratingChange, teamRating, damageDone, deaths, healingDone, damageTaken, healingTaken, killingBlows, mapId, start, end) VALUES ('" <<
+                    // Actually, "start" is not arena start time, it is arena _duration_ time (in milliseconds). I don't touch this DB field name because some people can use this web wow armory.
+                    // gameid, teamid, guid, changeType, ratingChange, teamRating, damageDone, deaths, healingDone, damageTaken, healingTaken, killingBlows, mapId, start, end
+                        gameID << "', '" << resultTeamID << "', '" << plr->GetObjectGuid().GetCounter()<< "', '" << changeType << "', '" << ratingChange << "', '" << resultRating << "', '" << itr->second->DamageDone << "', '" << itr->second->Deaths << "', '" << itr->second->HealingDone << "', '" << itr->second->DamageTaken << "', '" << itr->second->HealingTaken << "', '" << itr->second->KillingBlows << "', '" << m_MapId << "', '" << m_StartTime << "', '" << m_EndTime << "')";
+                    CharacterDatabase.Execute(sql_query.str().c_str());
+                }
+                /** World of Warcraft Armory **/
+            }
         }
         else
         {
@@ -1592,6 +1657,14 @@ void BattleGround::UpdatePlayerScore(Player* Source, uint32 type, uint32 value)
         case SCORE_HEALING_DONE:                            // Healing Done
             itr->second->HealingDone += value;
             break;
+        /** World of Warcraft Armory **/
+        case SCORE_DAMAGE_TAKEN:
+            itr->second->DamageTaken += value;              // Damage Taken
+            break;
+        case SCORE_HEALING_TAKEN:
+            itr->second->HealingTaken += value;             // Healing Taken
+            break;
+        /** World of Warcraft Armory **/
         default:
             sLog.outError("BattleGround: Unknown player score type %u", type);
             break;

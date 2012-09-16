@@ -1,0 +1,12 @@
+UPDATE `creature_ai_texts` SET `content_loc7` = `content_loc6`;
+UPDATE `db_script_string` SET `content_loc7` = `content_loc6`;
+UPDATE `mangos_string` SET `content_loc7` = `content_loc6`;
+UPDATE `locales_achievement_reward` SET `subject_loc7` = `subject_loc6`, `text_loc7` = `text_loc6`;
+UPDATE `locales_creature` SET `name_loc7` = `name_loc6`, `subname_loc7` = `subname_loc6`;
+UPDATE `locales_gameobject` SET `name_loc7` = `name_loc6`, `castbarcaption_loc7` = `castbarcaption_loc6`;
+UPDATE `locales_gossip_menu_option` SET `option_text_loc7` = `option_text_loc6`;
+UPDATE `locales_item` SET `name_loc7` = `name_loc6`, `description_loc7` = `description_loc6`;
+UPDATE `locales_npc_text` SET `Text0_0_loc7` = `Text0_0_loc6`, `Text0_1_loc7` = `Text0_1_loc6`, `Text1_0_loc7` = `Text1_0_loc6`, `Text1_1_loc7` = `Text1_1_loc6`;
+UPDATE `locales_page_text` SET `Text_loc7` = `Text_loc6`;
+UPDATE `locales_quest` SET `Title_loc7` = `Title_loc6`, `Details_loc7` = `Details_loc6`, `Objectives_loc7` = `Objectives_loc6`, `OfferRewardText_loc7` = `OfferRewardText_loc6`, `RequestItemsText_loc7` = `RequestItemsText_loc6`, `EndText_loc7` = `EndText_loc6`, `CompletedText_loc7` = `CompletedText_loc6`, `ObjectiveText1_loc7` = `ObjectiveText1_loc6`, `ObjectiveText2_loc7` = `ObjectiveText2_loc6`, `ObjectiveText3_loc7` = `ObjectiveText3_loc6`, `ObjectiveText4_loc7` = `ObjectiveText4_loc6`;
+UPDATE `locales_points_of_interest` SET `icon_name_loc7` = `icon_name_loc6`;

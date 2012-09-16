@@ -1133,11 +1133,11 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, DamageInfo* damageI
                         71491, 71484, 71492,    // Paladin
                         71485, 71491, 71486,    // Hunter
                         71485, 71486, 71492,    // Rogue
-                        71492, 71492, 71492,    // Priest
+                        71486, 71486, 71486,    // Priest
                         71491, 71484, 71492,    // Death Knight
                         71485, 71486, 71492,    // Shaman
-                        71492, 71492, 71492,    // Mage
-                        71492, 71492, 71492,    // Warlock
+                        71486, 71486, 71486,    // Mage
+                        71486, 71486, 71486,    // Warlock
                         0, 0, 0,                // (unused)
                         71485, 71484, 71492     // Druid
                     };
@@ -1148,11 +1148,11 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, DamageInfo* damageI
                         71559, 71561, 71560,    // Paladin
                         71556, 71559, 71558,    // Hunter
                         71556, 71558, 71560,    // Rogue
-                        71560, 71560, 71560,    // Priest
+                        71558, 71558, 71558,    // Priest
                         71559, 71561, 71560,    // Death Knight
                         71556, 71558, 71560,    // Shaman
-                        71560, 71560, 71560,    // Mage
-                        71560, 71560, 71560,    // Warlock
+                        71558, 71558, 71558,    // Mage
+                        71558, 71558, 71558,    // Warlock
                         0, 0, 0,                // (unused)
                         71556, 71561, 71560     // Druid
                     };
@@ -2292,7 +2292,7 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, DamageInfo* damageI
                 int32 holy = SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_HOLY);
                 if (holy < 0)
                     holy = 0;
-                basepoints[0] = GetAttackTime(BASE_ATTACK) * int32(ap*0.022f + 0.044f * holy) / 1000;
+                basepoints[0] = GetAttackTime(BASE_ATTACK) * int32(ap*0.011f + 0.022f * holy) / 1000;
                 break;
             }
             // Righteous Vengeance
@@ -2321,6 +2321,11 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, DamageInfo* damageI
                     if (!damage)
                         return SPELL_AURA_PROC_FAILED;
 
+                    /* Temp */
+                    int cura = rand() % 3;
+                    if(cura != 1) return SPELL_AURA_PROC_FAILED;
+                    //////////
+
                     basepoints[0] = int32( pVictim->GetMaxHealth() * triggeredByAura->GetModifier()->m_amount / 100 );
                     pVictim->CastCustomSpell(pVictim, 20267, &basepoints[0], NULL, NULL, true, NULL, triggeredByAura);
                     return SPELL_AURA_PROC_OK;
@@ -2331,6 +2336,11 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, DamageInfo* damageI
                     // only at real damage
                     if (!damage)
                         return SPELL_AURA_PROC_FAILED;
+
+                    /* Temp */
+                    int cura = rand() % 3;
+                    if(cura != 1) return SPELL_AURA_PROC_FAILED;
+                    /////////
 
                     if (pVictim->getPowerType() == POWER_MANA)
                     {
@@ -2588,19 +2598,6 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, DamageInfo* damageI
 
                     // triggered_spell_id in spell data
                     target = this;
-                    break;
-                }
-                // Item - Paladin T8 Holy 2P Bonus
-                case 64890:
-                {
-                    triggered_spell_id = 64891;             // Holy Mending
-                    basepoints[0] = int32(triggerAmount * damage / 100) / GetSpellAuraMaxTicks(triggered_spell_id);
-                    break;
-                }
-                // Item - Paladin T10 Holy 2P Bonus
-                case 70755:
-                {
-                    triggered_spell_id = 71166;
                     break;
                 }
                 // Item - Paladin T10 Retribution 2P Bonus
@@ -3728,7 +3725,7 @@ SpellAuraProcResult Unit::HandleProcTriggerSpellAuraProc(Unit *pVictim, DamageIn
                 case 71494:                                 // Vengeful Blast
                 {
                     // despawn Vengeful Shade after proc
-                    if  (GetTypeId() == TYPEID_UNIT)
+                    if (GetTypeId() == TYPEID_UNIT)
                         ((Creature*)this)->ForcedDespawn(1000);
                     break;
                 }
@@ -4378,6 +4375,17 @@ SpellAuraProcResult Unit::HandleProcTriggerSpellAuraProc(Unit *pVictim, DamageIn
             // Need add combopoint AFTER finishing move (or they get dropped in finish phase)
             if (Spell* spell = GetCurrentSpell(CURRENT_GENERIC_SPELL))
             {
+                if(trigger_spell_id == 14189 && spell->m_spellInfo->IsFitToFamily<SPELLFAMILY_ROGUE, CF_ROGUE_MUTILATE>())  //mutilate fix
+                {
+                    int8 combo = GetComboPoints();
+                    if(combo != mpoints)
+                    {
+                        AddComboPoints(pVictim,1);
+                        mpoints = GetComboPoints();
+                        return SPELL_AURA_PROC_OK;
+                    }
+                    return SPELL_AURA_PROC_OK;
+                }
                 spell->AddTriggeredSpell(trigger_spell_id);
                 return SPELL_AURA_PROC_OK;
             }
@@ -5254,7 +5262,7 @@ SpellAuraProcResult Unit::IsTriggeredAtCustomProcEvent(Unit *pVictim, SpellAuraH
     SpellEntry const* spellProto = holder->GetSpellProto();
 
     if (procSpell == spellProto)
-        return SPELL_AURA_PROC_FAILED;
+       return SPELL_AURA_PROC_FAILED;
 
     uint32 EventProcFlag = GetProcFlag(spellProto);
 

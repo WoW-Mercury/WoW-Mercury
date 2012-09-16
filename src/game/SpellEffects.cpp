@@ -556,6 +556,28 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
 
                         break;
                     }
+                    // Defile damage depending from scale.
+                    case 72754:
+                    case 73708:
+                    case 73709:
+                    case 73710:
+                        damage = damage * m_caster->GetObjectScale();
+                        break;
+                    }
+                    // Empowered Flare (Blood Council encounter)
+                    case 71708:
+                    {
+                        // aura doesn't want to proc, so hacked...
+                        if (SpellAuraHolderPtr holder = m_caster->GetSpellAuraHolder(71756))
+                        {
+                            if (holder->GetStackAmount() <= 1)
+                                m_caster->RemoveSpellAuraHolder(holder);
+                            else
+                                holder->ModStackAmount(-1);
+                        }
+
+                        break;
+                    }
                     // Bone Storm
                     case 69075:
                     case 70834:
@@ -593,6 +615,8 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
 
                         for (uint32 i = 1; i <= stack; ++i)
                             damage += extraDamage * i;
+
+                        m_caster->CastSpell(m_caster, 7, true);
 
                         break;
                     }
@@ -815,9 +839,8 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
                             damage = 0;
                         break;
                     }
+                    break;
                 }
-                break;
-            }
             case SPELLFAMILY_WARRIOR:
             {
                 // Bloodthirst
@@ -3684,10 +3707,36 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 }
                 case 72261:                                 // Delirious Slash
                 {
-                    if (!unitTarget)
+                    if(!unitTarget)
                         return;
 
-                    m_caster->CastSpell(unitTarget, m_caster->CanReachWithMeleeAttack(unitTarget) ? 71623 : 72264, true);
+                    m_caster->CastSpell(unitTarget, m_caster->GetMap()->IsRegularDifficulty() ? 72264 : 72265, true);
+                    break;
+                }
+                case 72313:                                 // Bloodbolt Visual
+                {
+                    if(!unitTarget)
+                        return;
+
+                    m_caster->CastSpell(unitTarget, m_caster->GetMap()->IsRegularDifficulty() ? 71446 : 71478, true);
+                    break;
+                }
+
+                case 72752:                                 // Will of the Forsaken Cooldown Trigger
+                case 72757:                                 // Will of the Forsaken Cooldown Trigger (WOTF)
+                {
+                    if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
+                        return;
+
+                    Player* target = (Player*)unitTarget;
+                    target->AddSpellCooldown(m_spellInfo->Id, 0, time(NULL) + m_spellInfo->CategoryRecoveryTime / IN_MILLISECONDS);
+                    WorldPacket data(SMSG_SPELL_COOLDOWN, 8+1+4);
+                    data << target->GetObjectGuid();
+                    data << uint8(0);
+                    data << uint32(m_spellInfo->Id);
+                    data << uint32(0);
+                    target->GetSession()->SendPacket(&data);
+
                     return;
                 }
                 default:
@@ -3823,7 +3872,12 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     }
                 }
 
-                m_caster->SetPower(POWER_RAGE,m_caster->GetPower(POWER_RAGE)-rage);
+                //m_caster->SetPower(POWER_RAGE,m_caster->GetPower(POWER_RAGE)-rage);
+                int32 setrage = m_caster->GetPower(POWER_RAGE) - rage;
+                if (setrage < 0)
+                    setrage = 0;
+
+                m_caster->SetPower(POWER_RAGE, setrage);
                 return;
             }
             // Slam
@@ -3833,6 +3887,7 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     return;
 
                 // dummy cast itself ignored by client in logs
+                //m_caster->SetPower(POWER_RAGE, m_caster->GetPower(POWER_RAGE) + 150); // Temp hack
                 m_caster->CastCustomSpell(unitTarget,50782,&damage,NULL,NULL,true);
                 return;
             }
@@ -4992,12 +5047,7 @@ void Spell::EffectTeleportUnits(SpellEffectIndex eff_idx)   // TODO - Use target
     if (!unitTarget || unitTarget->IsTaxiFlying())
         return;
 
-    // Target dependend on TargetB, if there is none provided, decide dependend on A
-    uint32 targetType = m_spellInfo->EffectImplicitTargetB[eff_idx];
-    if (!targetType)
-        targetType = m_spellInfo->EffectImplicitTargetA[eff_idx];
-
-    switch (targetType)
+    switch (m_spellInfo->EffectImplicitTargetB[eff_idx])
     {
         case TARGET_INNKEEPER_COORDINATES:
         {
@@ -6561,7 +6611,19 @@ void Spell::EffectDispel(SpellEffectIndex eff_idx)
                 data << uint32(dispelledHolder->GetId());   // Spell Id
                 data << uint8(0);                           // 0 - dispelled !=0 cleansed
 
+
+                // temporal
+
+                if(m_spellInfo->Id == 527 || m_spellInfo->Id == 988)
+                {
+                    if(dispelledHolder->GetId() == 642 || dispelledHolder->GetId() == 45438) return;
+                }
+                /////////////////////////
+
+               // if (dispelledHolder->GetSpellProto()->AttributesEx7 & SPELL_ATTR_EX7_DISPEL_CHARGES && dispelledHolder->GetAuraCharges() > 1)
+
                 if (dispelledHolder->GetSpellProto()->HasAttribute(SPELL_ATTR_EX7_DISPEL_CHARGES) && dispelledHolder->GetAuraCharges() > 1)
+
                 {
                     if (dispelledHolder->DropAuraCharge())
                         unitTarget->RemoveSpellAuraHolder(dispelledHolder, AURA_REMOVE_BY_DISPEL);
@@ -7527,34 +7589,19 @@ void Spell::EffectWeaponDmg(SpellEffectIndex eff_idx)
                 // Sunder Armor
                 Aura* sunder = unitTarget->GetAura<SPELL_AURA_MOD_RESISTANCE_PCT, SPELLFAMILY_WARRIOR, CF_WARRIOR_SUNDER_ARMOR>(m_caster->GetObjectGuid());
 
-                uint32 stack = 0;
-                uint32 stackMax = 0;
-
                 // Devastate bonus and sunder armor refresh
                 if (sunder)
                 {
                     sunder->GetHolder()->RefreshHolder();
-                    stack = sunder->GetStackAmount();
-                    stackMax = sunder->GetSpellProto()->StackAmount;
-                    spell_bonus += stack * CalculateDamage(EFFECT_INDEX_2, unitTarget);
-                }
-                else
-                {
-                    SpellEntry const* spellInfo = sSpellStore.LookupEntry(58567);
-                    if (spellInfo)
-                       stackMax = spellInfo->StackAmount;
+                    spell_bonus += sunder->GetStackAmount() * CalculateDamage(EFFECT_INDEX_2, unitTarget);
                 }
 
                 // Devastate causing Sunder Armor Effect
                 // and no need to cast over max stack amount
-                if (!stack || stack < stackMax)
-                {
+                if (!sunder || sunder->GetStackAmount() < sunder->GetSpellProto()->StackAmount)
                     m_caster->CastSpell(unitTarget, 58567, true);
-
-                    // Glyph of Devastate
-                    if (++stack < stackMax && m_caster->GetDummyAura(58388))
-                        m_caster->CastSpell(unitTarget, 58567, true);
-                }
+                    if (m_caster->GetDummyAura(58388))
+                        m_caster->CastSpell (unitTarget, 58567, true);
             }
             break;
         }
@@ -10489,6 +10536,22 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                         m_caster->CastSpell(unitTarget, 72423, true);
                     return;
                 }
+                case 74445:                                 // Valkyr Carry (control vehicle)
+                {
+                    if(!unitTarget || !m_caster)
+                        return;
+
+                    unitTarget->CastSpell(m_caster, 46598, true); // Control Vehicle aura
+                    break;
+                }
+                case 74455:                                 // Conflagration (Saviana Ragefire)
+                {
+                    if(!unitTarget)
+                        return;
+
+                    unitTarget->CastSpell(m_caster, 74456, true);
+                    return;
+                }
                 case 72705:                                 // Coldflame (summon around the caster)
                 {
                     if (!unitTarget)
@@ -11761,8 +11824,10 @@ void Spell::EffectCharge(SpellEffectIndex /*eff_idx*/)
     if (!unitTarget || !m_caster)
         return;
 
+    //TODO: research more ContactPoint/attack distance.
+    //3.666666 instead of ATTACK_DISTANCE(5.0f) in below seem to give more accurate result.
     float x, y, z;
-    unitTarget->GetContactPoint(m_caster, x, y, z);
+    unitTarget->GetContactPoint(m_caster, x, y, z, 3.666666f);
 
     // Try to normalize Z coord cuz GetContactPoint do nothing with Z axis
     m_caster->UpdateAllowedPositionZ(x, y, z);
@@ -11797,7 +11862,7 @@ void Spell::EffectCharge2(SpellEffectIndex /*eff_idx*/)
             ((Creature *)unitTarget)->StopMoving();
     }
     else if (unitTarget && unitTarget != m_caster)
-        unitTarget->GetContactPoint(m_caster, x, y, z);
+        unitTarget->GetContactPoint(m_caster, x, y, z, 3.666666f);
     else
         return;
 
@@ -11894,9 +11959,34 @@ void Spell::EffectKnockBack(SpellEffectIndex eff_idx)
     if (unitTarget->IsInWater())
         return;
 
-    // Can't knockback rooted target
-    if (unitTarget->hasUnitState(UNIT_STAT_ROOT))
+    // Can't knockback World Bosses
+    if (unitTarget->GetTypeId() == TYPEID_UNIT)
+        if (((Creature*)unitTarget)->IsWorldBoss())
+            return;
+
+    // Can't knockback rooted target or when has bladestorm aura
+    if (unitTarget->hasUnitState(UNIT_STAT_ROOT) || unitTarget->HasAura(46924))
         return;
+
+    if (unitTarget->GetTypeId() == TYPEID_UNIT)
+    {
+        switch (unitTarget->GetEntry()) // special cases (ICC)
+        {
+        case 36612: // Lord Marrowgar
+        case 36855: // Lady Deathhisper
+        case 37813: // Deathbringer Saurfang
+        case 36626: // Festergut
+        case 36627: // Rotface
+        case 36678: // Proffesor Putricide
+        case 37973: // Taldaram
+        case 37970: // Valanar
+        case 37972: // Keleseth
+        case 37955: // Blood Queen Lana'Thel
+        case 36853: // Sindragosa
+        case 36597: // Lich King
+            return;
+        }
+    }
 
     // Can't knockback BG vehicles
     if (unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -11932,9 +12022,6 @@ void Spell::EffectSendTaxi(SpellEffectIndex eff_idx)
 void Spell::EffectPlayerPull(SpellEffectIndex eff_idx)
 {
     if (!unitTarget)
-        return;
-
-    if (unitTarget->hasUnitState(UNIT_STAT_ROOT))
         return;
 
     float dist = unitTarget->GetDistance2d(m_caster);

@@ -853,6 +853,10 @@ void Spell::prepareDataForTriggerSystem()
                 break;
             case SPELLFAMILY_WARRIOR:
                 break;
+            case SPELLFAMILY_GENERIC:
+                // Bladestorm triggered
+                if (m_spellInfo->Id == 65946)
+                    m_canTrigger = true;
             default:
                 break;
         }
@@ -3272,7 +3276,25 @@ void Spell::prepare(SpellCastTargets const* targets, Aura const* triggeredByAura
     // Fill cost data
     m_powerCost = CalculatePowerCost(m_spellInfo, m_caster, this, m_CastItem);
 
+    // Slam (hacky hacky hack, double rage cost fix)
+    if (m_spellInfo->Id == 50782)
+        m_powerCost = 0;
+
     SpellCastResult result = CheckCast(true);
+
+    // disengage vs roots
+    if(m_spellInfo->Id == 781)
+    {
+        //bool root = false;
+        Unit::AuraList const& stunAuras = m_caster->GetAurasByType(SPELL_AURA_MOD_ROOT);
+        for (Unit::AuraList::const_iterator itr = stunAuras.begin(); itr != stunAuras.end(); ++itr)
+            if ((*itr)->HasMechanic(MECHANIC_ROOT))
+            {
+                result = SPELL_FAILED_ROOTED;
+                break;
+            }
+    }
+
     if (result != SPELL_CAST_OK && !IsAutoRepeat())          //always cast autorepeat dummy for triggering
     {
         if (triggeredByAura)
@@ -3484,6 +3506,8 @@ void Spell::cast(bool skipCheck)
                 AddPrecastSpell(71277);
             else if (m_spellInfo->Id == 70923)             // Uncontrollable Frenzy (Queen Lana'thel ICC)
                 AddTriggeredSpell(70924); // health buff etc.
+            else if (m_spellInfo->Id == 70126 || m_spellInfo->Id == 69766)
+                 if(m_targets.getUnitTarget()->HasAura(8178)) m_targets.getUnitTarget()->RemoveAurasDueToSpell(8178);
             break;
         }
         case SPELLFAMILY_MAGE:
@@ -3668,6 +3692,101 @@ void Spell::cast(bool skipCheck)
             break;
     }
 
+    //grounding totem fix
+    switch(m_spellInfo->SpellFamilyName)
+    {
+        case SPELLFAMILY_PALADIN:
+        {
+            switch(m_spellInfo->Id)
+            {
+                case 62124:                                                     //Hand of Reckoning
+                {
+                    if(m_targets.getUnitTarget()->HasAura(8178)) m_targets.getUnitTarget()->RemoveAurasDueToSpell(8178);
+                    break;
+                }
+            }
+            break;
+        }
+        case SPELLFAMILY_DRUID:
+        {
+            if(m_spellInfo->DmgClass == SPELL_DAMAGE_CLASS_MELEE)
+            {
+                if(m_targets.getUnitTarget()->HasAura(8178)) m_targets.getUnitTarget()->RemoveAurasDueToSpell(8178);
+                break;
+            }
+            switch(m_spellInfo->Id)
+            {
+                case 16979:                                                      //feral charge
+                case 49376:                                                      //feral charge
+                {
+                    if(m_targets.getUnitTarget()->HasAura(8178)) m_targets.getUnitTarget()->RemoveAurasDueToSpell(8178);
+                    break;
+                }
+            }
+            break;
+        }
+        case SPELLFAMILY_WARRIOR:
+        {
+            if(m_spellInfo->DmgClass == SPELL_DAMAGE_CLASS_MELEE)
+            {
+                if(m_targets.getUnitTarget()->HasAura(8178)) m_targets.getUnitTarget()->RemoveAurasDueToSpell(8178);
+                break;
+            }
+            if(m_spellInfo->SpellFamilyFlags.test<CF_WARRIOR_CHARGE>())          //charge
+            {
+                if(m_targets.getUnitTarget()->HasAura(8178)) m_targets.getUnitTarget()->RemoveAurasDueToSpell(8178);
+                break;
+            }
+            switch(m_spellInfo->Id)
+            {
+                case 20252:                                                      //intercept
+                {
+                    if(m_targets.getUnitTarget()->HasAura(8178)) m_targets.getUnitTarget()->RemoveAurasDueToSpell(8178);
+                    break;
+                }
+            }
+            break;
+        }
+        case SPELLFAMILY_ROGUE:
+        {
+            if(m_spellInfo->DmgClass == SPELL_DAMAGE_CLASS_MELEE)
+            {
+                if(m_targets.getUnitTarget()->HasAura(8178)) m_targets.getUnitTarget()->RemoveAurasDueToSpell(8178);
+                break;
+            }
+            if(     m_spellInfo->SpellFamilyFlags.test<CF_ROGUE_MUTILATE>()         //Honor Among Thieves
+
+                                   /** Rogue poisons **/
+                 /*|| m_spellInfo->SpellFamilyFlags.test<CF_ROGUE_INSTANT_POISON>()
+                 || m_spellInfo->SpellFamilyFlags.test<CF_ROGUE_CRIPPLING_POISON>()
+                 || m_spellInfo->SpellFamilyFlags.test<CF_ROGUE_MIND_NUMBING_POISON>()
+                 || m_spellInfo->SpellFamilyFlags.test<CF_ROGUE_DEADLY_POISON>()
+                 || m_spellInfo->SpellFamilyFlags.test<CF_ROGUE_DEADLY_POISON>()
+                 || m_spellInfo->SpellFamilyFlags.test<CF_ROGUE_WOUND_POISON>()*/
+            )
+            {
+                if(m_targets.getUnitTarget()->HasAura(8178)) m_targets.getUnitTarget()->RemoveAurasDueToSpell(8178);
+                break;
+            }
+            switch(m_spellInfo->Id)
+            {
+                case 36554:                                                      //ROGUE_SHADOWSTEP
+                case 14183:                                                      //PREMEDITATION
+                {
+                    if(m_targets.getUnitTarget()->HasAura(8178)) m_targets.getUnitTarget()->RemoveAurasDueToSpell(8178);
+                    break;
+                }
+            }
+            break;
+        }
+        default:
+        {
+            if(m_spellInfo->Id == 72293) if(m_targets.getUnitTarget()->HasAura(8178)) m_targets.getUnitTarget()->RemoveAurasDueToSpell(8178);
+            break;
+        }
+
+    }
+
     // Linked spells (precast chain)
     SpellLinkedSet linkedSet = sSpellMgr.GetSpellLinked(m_spellInfo->Id, SPELL_LINKED_TYPE_PRECAST);
     if (linkedSet.size() > 0)
@@ -3774,11 +3893,28 @@ void Spell::cast(bool skipCheck)
             handle_immediate();
             m_caster->ProcDamageAndSpell(procTarget, m_procAttacker, PROC_FLAG_NONE, PROC_EX_CAST_END, 0, m_attackType, m_spellInfo);
         }
-
     }
 
     m_caster->DecreaseCastCounter();
     SetExecutedCurrently(false);
+
+    // Borrowed Time temp fix
+   /* if(!m_spellInfo->SpellFamilyFlags.test<CF_PRIEST_POWER_WORD_SHIELD>() && m_spellInfo->Id != 52800) {
+
+
+
+    */
+    if(          m_spellInfo->Id == 8129           // quemar mana
+          ||     m_spellInfo->Id == 53007          // penitencia 4
+          ||     m_spellInfo->Id == 48127          // explosion mental 13
+          ||     m_spellInfo->Id == 48135          // fuego sagrado 11
+    ){
+        if(m_caster->HasAura(59891)) m_caster->RemoveAurasDueToSpell(59891);       // 5
+        else if(m_caster->HasAura(59890)) m_caster->RemoveAurasDueToSpell(59890);  // 4
+        else if(m_caster->HasAura(59889)) m_caster->RemoveAurasDueToSpell(59889);  // 3
+        else if(m_caster->HasAura(59888)) m_caster->RemoveAurasDueToSpell(59888);  // 2
+        else if(m_caster->HasAura(59887)) m_caster->RemoveAurasDueToSpell(59887);  // 1
+    }
 }
 
 void Spell::handle_immediate()
@@ -3956,7 +4092,6 @@ void Spell::update(uint32 difftime)
         else if(!IsNextMeleeSwingSpell() && !IsAutoRepeat() && !m_IsTriggeredSpell && (m_spellInfo->InterruptFlags & SPELL_INTERRUPT_FLAG_MOVEMENT))
             cancel();
     }
-
 
     switch(m_spellState)
     {
@@ -5438,6 +5573,13 @@ SpellCastResult Spell::CheckCast(bool strict)
                 if (target->HasAura(61987))                 // Avenging Wrath Marker
                     return SPELL_FAILED_CASTER_AURASTATE;
             }
+
+            // Vampiric Bite (Lana'thel encounter)
+            if (m_spellInfo->Id == 70946 || m_spellInfo->Id == 71475 ||
+                m_spellInfo->Id == 71476 || m_spellInfo->Id == 71477)
+            {
+                return SPELL_FAILED_BAD_TARGETS;
+            }
         }
 
         // check pet presents
@@ -5845,11 +5987,6 @@ SpellCastResult Spell::CheckCast(bool strict)
                     if (m_targets.getUnitTarget() && !m_caster->IsFriendlyTo(m_targets.getUnitTarget()) && !m_caster->HasInArc(M_PI_F, m_targets.getUnitTarget()))
                         return SPELL_FAILED_UNIT_NOT_INFRONT;
                 }
-                else if(m_spellInfo->Id == 49576)           // Death Grip
-                {
-                    if(m_caster->m_movementInfo.HasMovementFlag(MovementFlags(MOVEFLAG_FALLING | MOVEFLAG_FALLINGFAR)))
-                        return SPELL_FAILED_MOVING;
-                }
                 else if (m_spellInfo->SpellFamilyName == SPELLFAMILY_SHAMAN && m_spellInfo->SpellIconID == 33) // Fire Nova
                 {
                     // fire totems slot
@@ -6097,7 +6234,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                 {
                     // In BattleGround players can use only flags and banners
                     if ( ((Player*)m_caster)->InBattleGround() &&
-                        !((Player*)m_caster)->CanUseBattleGroundObject() && m_spellInfo->Id!= 1842 ) // Disarm Trap can be used
+                        !((Player*)m_caster)->CanUseBattleGroundObject() && m_spellInfo->Id!= 1842 ) // Disarm Trap can be used)
                         return SPELL_FAILED_TRY_AGAIN;
 
                     lockId = go->GetGOInfo()->GetLockId();
@@ -6260,7 +6397,6 @@ SpellCastResult Spell::CheckCast(bool strict)
                     if (m_caster->hasUnitState(UNIT_STAT_ROOT))
                         return SPELL_FAILED_ROOTED;
                 }
-
                 // not allow use this effect at battleground until battleground start
                 if (m_caster->GetTypeId() == TYPEID_PLAYER)
                 {
@@ -6277,14 +6413,6 @@ SpellCastResult Spell::CheckCast(bool strict)
             {
                 if (m_targets.getUnitTarget() == m_caster)
                     return SPELL_FAILED_BAD_TARGETS;
-                break;
-            }
-            case SPELL_EFFECT_JUMP:
-            case SPELL_EFFECT_JUMP2:
-            case SPELL_EFFECT_CHARGE2:
-            {
-                if (m_caster->hasUnitState(UNIT_STAT_ROOT))
-                    return SPELL_FAILED_ROOTED;
                 break;
             }
             default:
@@ -7783,6 +7911,85 @@ bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff )
             return false;
     }
 
+    // Checkout if target is behing particular object
+    uint32 uiObjectEntry = 0;
+
+    switch(m_spellInfo->Id)
+    {
+        case 68786:     // Permafrost (Garfrost)
+        case 70336:     // Permafrost Heroic (Garfrost)
+            uiObjectEntry = 196485;
+            break;
+        case 69845:     // Frost Bomb (Sindragosa)
+        case 71053:
+        case 71054:
+        case 71055:
+        case 70127:     // Mystic Buffet (Sindragosa)
+        case 72528:
+        case 72529:
+        case 72530:
+        case 70084:     // Frost Aura (Sindragosa)
+        case 71050:
+        case 71051:
+        case 71052:
+        case 69649:     // Frost Breath (Sindragosa)
+        case 71056:
+        case 71057:
+        case 71058:
+        case 70123:     // Blistering Cold (Sindragosa)
+        case 71048:
+        case 71049:
+        case 71047:
+        case 70122:     // Icy grip (Sindragosa)
+        case 71077:     // Tail smash (Sindragosa)
+        case 19983:     // Cleave (Sindragosa)
+            uiObjectEntry = 201722;
+            break;
+    }
+
+    if (uiObjectEntry)
+    {
+        // Description:
+        // code check out if player is hidden behind GO in circle with diameter equal to GO size
+        // with center placed on the perimeter of GO
+        //     C<- caster
+        //    / \<- cone of spell
+        //   /   \
+        //  / (o) \<- shelter object
+        // /  (T)  \<- target in safty circle
+
+        std::list<GameObject*>lObjectList;
+        target->GetGameObjectListWithEntryInGrid(lObjectList, uiObjectEntry, target->GetDistance2d(m_caster));
+        float fTargetX, fTargetY, fTargetZ;
+        float fCasterX, fCasterY, fCasterZ;
+        target->GetPosition(fTargetX, fTargetY, fTargetZ);
+        m_caster->GetPosition(fCasterX, fCasterY, fCasterZ);
+        for (std::list<GameObject*>::iterator itr = lObjectList.begin(); itr != lObjectList.end(); ++itr)
+        {
+            float fDistBlock = m_caster->GetDistance2d(*itr);
+            float fDistVictim = m_caster->GetDistance2d(target);
+            float fDistVictimToBlock = target->GetDistance2d(*itr);
+
+            // quick check
+            if (fDistBlock > fDistVictim)
+                continue;
+
+            float fObjectSize = (*itr)->GetGOInfo()->size;
+
+            // Ice Block in Sindragosa ecounter - size is very small, so we have to use bigger values
+            if (uiObjectEntry == 201722)
+                fObjectSize = 4.0f;
+
+            // not too accurate but fast, good enough for now
+            // small part of ground behind and on sides of the obstacle
+            if (fDistVictimToBlock < fObjectSize + 5.0f &&
+                fDistVictim > fDistBlock + fObjectSize - 2.0f)
+            {
+                return false;
+            }
+        }
+    }
+
     // Check Sated & Exhaustion debuffs
     if (((m_spellInfo->Id == 2825) && (target->HasAura(57724) || target->HasAura(57723))) ||
         ((m_spellInfo->Id == 32182) && (target->HasAura(57724)|| target->HasAura(57723))))
@@ -8573,6 +8780,72 @@ bool Spell::FillCustomTargetMap(SpellEffectIndex i, UnitList &targetUnitMap)
             FillAreaTargets(targetUnitMap, radius, PUSH_DEST_CENTER, SPELL_TARGETS_AOE_DAMAGE);
             break;
         }
+        case 65980: // Bloodlust (Trial Of The Crusader - Faction Champions)
+        {
+            UnitList tmpUnitMap;
+            FillAreaTargets(tmpUnitMap, radius, PUSH_SELF_CENTER, SPELL_TARGETS_FRIENDLY);
+            if (!tmpUnitMap.empty())
+            {
+                for (UnitList::const_iterator itr = tmpUnitMap.begin(); itr != tmpUnitMap.end(); ++itr)
+                {
+                    if ((*itr)->GetTypeId() != TYPEID_UNIT)
+                        continue;
+
+                    if ((*itr)->GetEntry() == 34451 ||
+                        (*itr)->GetEntry() == 34455 ||
+                        (*itr)->GetEntry() == 34458 ||
+                        (*itr)->GetEntry() == 34454 ||
+                        (*itr)->GetEntry() == 34453 ||
+                        (*itr)->GetEntry() == 34456 ||
+                        (*itr)->GetEntry() == 34441 ||
+                        (*itr)->GetEntry() == 34449 ||
+                        (*itr)->GetEntry() == 34448 ||
+                        (*itr)->GetEntry() == 34450 ||
+                        (*itr)->GetEntry() == 34444 ||
+                        (*itr)->GetEntry() == 34447 ||
+                        (*itr)->GetEntry() == 34445 ||
+                        (*itr)->GetEntry() == 34459 ||
+                        (*itr)->GetEntry() == 35465 ||
+                        (*itr)->GetEntry() == 35610)
+
+                        targetUnitMap.push_back(*itr);
+                }
+            }
+            break;
+        }
+        case 65983: // Heroism (Trial Of The Crusader - Faction Champions)
+        {
+            UnitList tmpUnitMap;
+            FillAreaTargets(tmpUnitMap, radius, PUSH_SELF_CENTER, SPELL_TARGETS_FRIENDLY);
+            if (!tmpUnitMap.empty())
+            {
+                for (UnitList::const_iterator itr = tmpUnitMap.begin(); itr != tmpUnitMap.end(); ++itr)
+                {
+                    if ((*itr)->GetTypeId() != TYPEID_UNIT)
+                        continue;
+
+                    if ((*itr)->GetEntry() == 34460 ||
+                        (*itr)->GetEntry() == 34463 ||
+                        (*itr)->GetEntry() == 34461 ||
+                        (*itr)->GetEntry() == 34472 ||
+                        (*itr)->GetEntry() == 34475 ||
+                        (*itr)->GetEntry() == 34471 ||
+                        (*itr)->GetEntry() == 34473 ||
+                        (*itr)->GetEntry() == 34468 ||
+                        (*itr)->GetEntry() == 34467 ||
+                        (*itr)->GetEntry() == 34474 ||
+                        (*itr)->GetEntry() == 34470 ||
+                        (*itr)->GetEntry() == 34466 ||
+                        (*itr)->GetEntry() == 34465 ||
+                        (*itr)->GetEntry() == 34469 ||
+                        (*itr)->GetEntry() == 35465 ||
+                        (*itr)->GetEntry() == 35610)
+
+                        targetUnitMap.push_back(*itr);
+                }
+            }
+            break;
+        }
         case 65919: // Anub'arak Cast Check Ice Spell (Trial of the Crusader - Anub'arak)
         case 67858:
         case 67859:
@@ -8697,6 +8970,27 @@ bool Spell::FillCustomTargetMap(SpellEffectIndex i, UnitList &targetUnitMap)
         case 73778:
         {
             FillAreaTargets(targetUnitMap, radius, PUSH_SELF_CENTER, SPELL_TARGETS_AOE_DAMAGE, GetAffectiveCaster());
+            break;
+        }
+        case 69159: // Gaseous Blight (Festergut)
+        case 69161:
+        case 69163:
+        case 70138:
+        case 70137:
+        case 70136:
+        case 70135:
+        {
+            UnitList tempTargetUnitMap;
+            FillAreaTargets(tempTargetUnitMap, radius, PUSH_INHERITED_CENTER, SPELL_TARGETS_AOE_DAMAGE);
+            if (!tempTargetUnitMap.empty())
+            {
+                for (UnitList::const_iterator iter = tempTargetUnitMap.begin(); iter != tempTargetUnitMap.end(); ++iter)
+                {
+                    if (!(*iter)->GetCharmerOrOwnerPlayerOrPlayerItself())
+                        continue;
+                    targetUnitMap.push_back((*iter));
+                }
+            }
             break;
         }
         case 69298: // Cancel Resistant To Blight (Festergut)
@@ -8834,6 +9128,32 @@ bool Spell::FillCustomTargetMap(SpellEffectIndex i, UnitList &targetUnitMap)
             {
                 if ((*iter)->getPowerType() == POWER_MANA && (*iter)->GetCharmerOrOwnerPlayerOrPlayerItself())
                     targetUnitMap.push_back(*iter);
+            }
+
+            if (!targetUnitMap.empty())
+            {
+                uint32 max = 2;
+                if (m_caster->GetMap()->GetDifficulty() == RAID_DIFFICULTY_25MAN_NORMAL ||
+                    m_caster->GetMap()->GetDifficulty() == RAID_DIFFICULTY_25MAN_HEROIC)
+                {
+                    max = 6;
+                }
+
+                // remove random units from the map
+                while (targetUnitMap.size() > max)
+                {
+                    uint32 poz = urand(0, targetUnitMap.size()-1);
+                    for (UnitList::iterator itr = targetUnitMap.begin(); itr != targetUnitMap.end(); ++itr, --poz)
+                    {
+                        if (!*itr) continue;
+
+                        if (!poz)
+                        {
+                            targetUnitMap.erase(itr);
+                            break;
+                        }
+                    }
+                }
             }
             break;
         }
@@ -9010,6 +9330,22 @@ bool Spell::FillCustomTargetMap(SpellEffectIndex i, UnitList &targetUnitMap)
             }
             break;
         }
+        case 70882: // Slime spray summon trigger
+        {
+            UnitList tempTargetUnitMap;
+            FillAreaTargets(tempTargetUnitMap, radius, PUSH_SELF_CENTER, SPELL_TARGETS_ALL);
+            if (!tempTargetUnitMap.empty())
+            {
+                for (UnitList::const_iterator itr = tempTargetUnitMap.begin(); itr != tempTargetUnitMap.end(); ++itr)
+                {
+                    if ((*itr) && (*itr)->GetTypeId() != TYPEID_PLAYER)
+                        continue;
+
+                    targetUnitMap.push_back(*itr);
+                }
+            }
+            break;
+        }
         case 70911: // Unbound Plague (Putricide)
         case 72854:
         case 72855:
@@ -9135,6 +9471,15 @@ bool Spell::FillCustomTargetMap(SpellEffectIndex i, UnitList &targetUnitMap)
             }
 
             unMaxTargets = 1;
+            break;
+        }
+        case 72380:                                     // Blood Nova AOE (Saurfang)
+        case 72438:
+        case 72439:
+        case 72440:
+        {
+            FillAreaTargets(targetUnitMap, radius, PUSH_SELF_CENTER, SPELL_TARGETS_AOE_DAMAGE, GetAffectiveCaster());
+            targetUnitMap.remove(m_caster);
             break;
         }
         case 72385:                                     // Boiling Blood
