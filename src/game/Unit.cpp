@@ -1470,7 +1470,7 @@ void Unit::CastSpell(Unit* Victim, SpellEntry const *spellInfo, bool triggered, 
         }
     }
 
-    Spell *spell = new Spell(this, spellInfo, triggered, originalCaster, triggeredBy);
+    Spell* spell = new Spell(this, spellInfo, triggered, originalCaster, triggeredBy);
 
     SpellCastTargets targets;
     targets.setUnitTarget( Victim );
