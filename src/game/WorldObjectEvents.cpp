@@ -33,6 +33,12 @@
 
 // Event processor
 
+WorldObjectEventProcessor::WorldObjectEventProcessor()
+{
+    //m_time = WorldTimer::getMSTime();
+    m_events.clear();
+}
+
 void WorldObjectEventProcessor::Update(uint32 p_time, bool force)
 {
     if (force)
@@ -48,6 +54,7 @@ void WorldObjectEventProcessor::KillAllEvents(bool force)
 
     EventProcessor::KillAllEvents(force);
 }
+
 
 void WorldObjectEventProcessor::AddEvent(BasicEvent* Event, uint64 e_time, bool set_addtime)
 {
@@ -360,9 +367,6 @@ bool EvadeDelayEvent::Execute(uint64 /*e_time*/, uint32 /*p_time*/)
             if (c_owner->IsDespawned() || c_owner->isCharmed() || c_owner->hasUnitState(UNIT_STAT_CAN_NOT_REACT_OR_LOST_CONTROL))
                 return true;
 
-            if (c_owner->isAlive())
-                c_owner->GetMotionMaster()->MoveTargetedHome();
-
             CreatureAI* ai = c_owner->AI();
             if (ai)
                 ai->EnterEvadeMode();
@@ -385,9 +389,6 @@ bool EvadeDelayEvent::Execute(uint64 /*e_time*/, uint32 /*p_time*/)
 
             if (c_owner->IsDespawned())
                 return true;
-
-            if (c_owner->isAlive())
-                c_owner->GetMotionMaster()->MoveTargetedHome();
 
             Pet* p_owner = (Pet*)(&m_owner);
             if (!p_owner)
