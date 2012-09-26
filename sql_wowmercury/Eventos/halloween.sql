@@ -19,9 +19,9 @@ UPDATE `creature_template` SET `minhealth` = '162000', `maxhealth` = '162000' WH
 UPDATE `item_template` SET `spellid_1` = '42966', `spellcooldown_1` = '5000' WHERE `entry` = 33226;
 
 DELETE FROM `gossip_scripts` WHERE `id` = 342;
-INSERT INTO `gossip_scripts` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `comments`)
+INSERT INTO `gossip_scripts` (`id`, `delay`, `command`, `datalong`, `datalong2`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `comments`)
 VALUES
-   (342, 0, 15, 24751, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '');
+   (342, 0, 15, 24751, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '');
 
 -- Quest Jinete
 

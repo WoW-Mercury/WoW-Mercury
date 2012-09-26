@@ -1,7 +1,7 @@
 DELETE FROM `spell_scripts` WHERE `id` = 70192;
-INSERT INTO `spell_scripts` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `comments`)
+INSERT INTO `spell_scripts` (`id`, `delay`, `command`, `datalong`, `datalong2`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `comments`)
 VALUES
-	(70192, 0, 8, 37558, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '');
+	(70192, 0, 8, 37558, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '');
 	
 UPDATE `creature_template_addon` SET `auras` = '71507' WHERE `entry` = 3296;
 UPDATE `creature_template_addon` SET `auras` = '71507' WHERE `entry` = 68;
@@ -10,11 +10,11 @@ UPDATE `creature_template` SET `AIName` = 'EventAI' WHERE `entry` = 3296;
 UPDATE `creature_template` SET `AIName` = 'EventAI' WHERE `entry` = 68;
 
 DELETE FROM `quest_end_scripts` WHERE `id` = 14488;
-INSERT INTO `quest_end_scripts` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `comments`)
+INSERT INTO `quest_end_scripts` (`id`, `delay`, `command`, `datalong`, `datalong2`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `comments`)
 VALUES
-	(14488, 0, 22, 14, 0, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ''),
-	(14488, 0, 22, 14, 36272, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ''),
-	(14488, 0, 22, 14, 36565, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '');
+	(14488, 0, 22, 14, 0, 50, 0, 0, 0, 0, 0, 0, 0, 0, ''),
+	(14488, 0, 22, 14, 36272, 50, 0, 0, 0, 0, 0, 0, 0, 0, ''),
+	(14488, 0, 22, 14, 36565, 50, 0, 0, 0, 0, 0, 0, 0, 0, '');
 
 DELETE FROM `quest_template` WHERE `entry` = 1660;
 INSERT INTO `quest_template` (`entry`, `Method`, `ZoneOrSort`, `MinLevel`, `QuestLevel`, `Type`, `RequiredClasses`, `RequiredRaces`, `RequiredSkill`, `RequiredSkillValue`, `RepObjectiveFaction`, `RepObjectiveValue`, `RequiredMinRepFaction`, `RequiredMinRepValue`, `RequiredMaxRepFaction`, `RequiredMaxRepValue`, `SuggestedPlayers`, `LimitTime`, `QuestFlags`, `SpecialFlags`, `CharTitleId`, `PlayersSlain`, `BonusTalents`, `PrevQuestId`, `NextQuestId`, `ExclusiveGroup`, `NextQuestInChain`, `RewXPId`, `SrcItemId`, `SrcItemCount`, `SrcSpell`, `Title`, `Details`, `Objectives`, `OfferRewardText`, `RequestItemsText`, `EndText`, `CompletedText`, `ObjectiveText1`, `ObjectiveText2`, `ObjectiveText3`, `ObjectiveText4`, `ReqItemId1`, `ReqItemId2`, `ReqItemId3`, `ReqItemId4`, `ReqItemId5`, `ReqItemId6`, `ReqItemCount1`, `ReqItemCount2`, `ReqItemCount3`, `ReqItemCount4`, `ReqItemCount5`, `ReqItemCount6`, `ReqSourceId1`, `ReqSourceId2`, `ReqSourceId3`, `ReqSourceId4`, `ReqSourceCount1`, `ReqSourceCount2`, `ReqSourceCount3`, `ReqSourceCount4`, `ReqCreatureOrGOId1`, `ReqCreatureOrGOId2`, `ReqCreatureOrGOId3`, `ReqCreatureOrGOId4`, `ReqCreatureOrGOCount1`, `ReqCreatureOrGOCount2`, `ReqCreatureOrGOCount3`, `ReqCreatureOrGOCount4`, `ReqSpellCast1`, `ReqSpellCast2`, `ReqSpellCast3`, `ReqSpellCast4`, `RewChoiceItemId1`, `RewChoiceItemId2`, `RewChoiceItemId3`, `RewChoiceItemId4`, `RewChoiceItemId5`, `RewChoiceItemId6`, `RewChoiceItemCount1`, `RewChoiceItemCount2`, `RewChoiceItemCount3`, `RewChoiceItemCount4`, `RewChoiceItemCount5`, `RewChoiceItemCount6`, `RewItemId1`, `RewItemId2`, `RewItemId3`, `RewItemId4`, `RewItemCount1`, `RewItemCount2`, `RewItemCount3`, `RewItemCount4`, `RewRepFaction1`, `RewRepFaction2`, `RewRepFaction3`, `RewRepFaction4`, `RewRepFaction5`, `RewRepValueId1`, `RewRepValueId2`, `RewRepValueId3`, `RewRepValueId4`, `RewRepValueId5`, `RewRepValue1`, `RewRepValue2`, `RewRepValue3`, `RewRepValue4`, `RewRepValue5`, `RewHonorAddition`, `RewHonorMultiplier`, `RewOrReqMoney`, `RewMoneyMaxLevel`, `RewSpell`, `RewSpellCast`, `RewMailTemplateId`, `RewMailDelaySecs`, `PointMapId`, `PointX`, `PointY`, `PointOpt`, `DetailsEmote1`, `DetailsEmote2`, `DetailsEmote3`, `DetailsEmote4`, `DetailsEmoteDelay1`, `DetailsEmoteDelay2`, `DetailsEmoteDelay3`, `DetailsEmoteDelay4`, `IncompleteEmote`, `CompleteEmote`, `OfferRewardEmote1`, `OfferRewardEmote2`, `OfferRewardEmote3`, `OfferRewardEmote4`, `OfferRewardEmoteDelay1`, `OfferRewardEmoteDelay2`, `OfferRewardEmoteDelay3`, `OfferRewardEmoteDelay4`, `StartScript`, `CompleteScript`)
@@ -32,9 +32,9 @@ REPLACE INTO `creature_involvedrelation` (`id`, `quest`) VALUES (15337, 1660);
 REPLACE INTO `creature_questrelation` (`id`, `quest`) VALUES (15337, 1660);
 
 DELETE FROM `spell_scripts` WHERE `id` = 71024;
-INSERT INTO `spell_scripts` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `comments`)
+INSERT INTO `spell_scripts` (`id`, `delay`, `command`, `datalong`, `datalong2`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `comments`)
 VALUES
-	(71024, 0, 8, 38035, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '');
+	(71024, 0, 8, 38035, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '');
 
 UPDATE `creature_template` SET `minlevel` = '50', `maxlevel` = '50', `minhealth` = '2250', `maxhealth` = '2250', `scale` = '2', `npcflag` = '1', `type_flags` = '0', `rank` = '0', `modelid_1` = '22162' WHERE `entry` = 15330;
 UPDATE `creature_template` SET `name` = 'Logroneitor 3000' WHERE `entry` = 15330;
